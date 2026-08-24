@@ -1,13 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PlanPanel } from "./components/PlanPanel";
 import { ContextPanel } from "./components/ContextPanel";
 import { DeltaLog } from "./components/DeltaLog";
 import { SAMPLE_PLAN, SAMPLE_CONTEXT, SAMPLE_WORKING_MEMORY } from "./data/samplePlan";
 import type { Delta } from "./types/delta";
+import { Review } from "./review";
+
+function isReviewHash() {
+  return typeof window !== "undefined" && window.location.hash === "#/review";
+}
 
 export function App() {
-  const [deltas, setDeltas] = useState<Delta[]>([]);
+  // Code viewer is a dev tool, routed via URL hash to keep the product
+  // shell untouched. Visit `/#/review` to enter.
+  const [isReview, setIsReview] = useState(isReviewHash);
+  useEffect(() => {
+    const handler = () => setIsReview(isReviewHash());
+    window.addEventListener("hashchange", handler);
+    return () => window.removeEventListener("hashchange", handler);
+  }, []);
 
+  if (isReview) {
+    return <Review />;
+  }
+
+  const [deltas, setDeltas] = useState<Delta[]>([]);
   return (
     <div className="app">
       <header className="app__header">

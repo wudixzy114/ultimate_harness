@@ -39,9 +39,10 @@ pub struct FileAttrs {
     pub invariants: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum PubKind {
+    #[default]
     Struct,
     Enum,
     Trait,
@@ -54,7 +55,7 @@ pub enum PubKind {
 
 /// A publicly-exposed item, with optional nested children (e.g. enum
 /// variants, trait methods, mod contents).
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Default)]
 pub struct PubItem {
     pub kind: PubKind,
     pub name: String,
@@ -65,8 +66,34 @@ pub struct PubItem {
     pub invariants: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub data_flow: Option<DataFlow>,
+    /// Enum variants, trait methods, mod contents, etc.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub children: Vec<PubItem>,
+    /// Struct fields only. Empty for other kinds. The `has_doc` flag
+    /// on each field is what the viewer highlights as "missing
+    /// annotation" — a real review target.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<FieldInfo>,
+    /// `true` if the struct has any field without a `///` doc comment.
+    /// Pre-computed so the UI can show a single badge without scanning.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub has_undocumented_fields: bool,
+}
+
+/// One field of a struct. The `has_doc` flag is intentionally redundant
+/// with `doc.is_some()` so the UI can render a "missing annotation"
+/// column without parsing optional fields.
+#[derive(Debug, Clone, Serialize)]
+pub struct FieldInfo {
+    pub name: String,
+    /// Rendered type as it appears in source (e.g. `Vec<ContextLayer>`).
+    pub ty: String,
+    pub line: usize,
+    pub has_doc: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub doc: Option<String>,
+    /// `""` for private, `"pub"`, `"pub(crate)"`, `"pub(super)"`, etc.
+    pub vis: String,
 }
 
 /// A `#[test]` function (file-scope, not inside an explicit test mod).

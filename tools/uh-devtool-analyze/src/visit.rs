@@ -5,9 +5,9 @@
 //! `/// # @data-flow` block, in which case they appear in `fns`.
 
 use crate::attrs::{collect_docs, is_test_mod, parse_file_attrs, parse_item_attrs};
-use crate::model::{FileAnalysis, FnAnalysis, PubItem, PubKind, TestInfo};
+use crate::model::{FieldInfo, FileAnalysis, FnAnalysis, PubItem, PubKind, TestInfo};
 use std::path::Path;
-use syn::{Attribute, ImplItem, Item, ItemMod, TraitItem, Type, Visibility};
+use syn::{spanned::Spanned, Attribute, Fields, ImplItem, Item, ItemMod, TraitItem, Type, Visibility};
 
 pub fn analyze_syntax(path: &Path, syntax: &syn::File) -> FileAnalysis {
     let file_docs = collect_docs(&syntax.attrs);
@@ -65,6 +65,8 @@ fn walk_item(
 
     match item {
         Item::Struct(s) if is_pub(&s.vis) => {
+            let fields = extract_fields(&s.fields);
+            let has_undoc = fields.iter().any(|f| !f.has_doc);
             exposed.push(PubItem {
                 kind: PubKind::Struct,
                 name: with_parent(parent, &s.ident.to_string()),
@@ -73,6 +75,8 @@ fn walk_item(
                 invariants: attrs.invariants,
                 data_flow: attrs.data_flow,
                 children: Vec::new(),
+                fields,
+                has_undocumented_fields: has_undoc,
             });
         }
         Item::Enum(e) if is_pub(&e.vis) => {
@@ -83,10 +87,7 @@ fn walk_item(
                     kind: PubKind::Const,
                     name: v.ident.to_string(),
                     line: v.ident.span().start().line,
-                    tags: Vec::new(),
-                    invariants: Vec::new(),
-                    data_flow: None,
-                    children: Vec::new(),
+                    ..Default::default()
                 })
                 .collect();
             exposed.push(PubItem {
@@ -97,6 +98,7 @@ fn walk_item(
                 invariants: attrs.invariants,
                 data_flow: attrs.data_flow,
                 children,
+                ..Default::default()
             });
         }
         Item::Trait(t) if is_pub(&t.vis) => {
@@ -113,7 +115,7 @@ fn walk_item(
                         tags: child_attrs.tags.clone(),
                         invariants: child_attrs.invariants.clone(),
                         data_flow: child_attrs.data_flow.clone(),
-                        children: Vec::new(),
+                        ..Default::default()
                     });
                     if child_attrs.data_flow.is_some() {
                         fns.push(FnAnalysis {
@@ -132,6 +134,7 @@ fn walk_item(
                 invariants: attrs.invariants,
                 data_flow: attrs.data_flow,
                 children,
+                ..Default::default()
             });
         }
         Item::Fn(f) if is_pub(&f.vis) => {
@@ -144,6 +147,7 @@ fn walk_item(
                 invariants: attrs.invariants.clone(),
                 data_flow: attrs.data_flow.clone(),
                 children: Vec::new(),
+                ..Default::default()
             });
             if attrs.data_flow.is_some() {
                 fns.push(FnAnalysis {
@@ -162,6 +166,7 @@ fn walk_item(
                 invariants: attrs.invariants,
                 data_flow: attrs.data_flow,
                 children: Vec::new(),
+                ..Default::default()
             });
         }
         Item::Type(t) if is_pub(&t.vis) => {
@@ -173,6 +178,7 @@ fn walk_item(
                 invariants: attrs.invariants,
                 data_flow: attrs.data_flow,
                 children: Vec::new(),
+                ..Default::default()
             });
         }
         Item::Impl(i) => {
@@ -192,6 +198,7 @@ fn walk_item(
                             invariants: child_attrs.invariants.clone(),
                             data_flow: child_attrs.data_flow.clone(),
                             children: Vec::new(),
+                            ..Default::default()
                         });
                     }
                     if child_attrs.data_flow.is_some() {
@@ -220,6 +227,7 @@ fn walk_item(
                 invariants: attrs.invariants,
                 data_flow: attrs.data_flow,
                 children,
+                ..Default::default()
             });
             fns.extend(sub_fns);
         }
@@ -273,6 +281,70 @@ fn type_short_name(t: &Type) -> String {
     }
 }
 
+fn extract_fields(fields: &Fields) -> Vec<FieldInfo> {
+    match fields {
+        Fields::Named(named) => named
+            .named
+            .iter()
+            .map(|f| field_info(f, f.ident.as_ref().map(|i| i.to_string()).unwrap_or_default()))
+            .collect(),
+        Fields::Unnamed(unnamed) => unnamed
+            .unnamed
+            .iter()
+            .enumerate()
+            .map(|(idx, f)| field_info(f, format!("_{idx}")))
+            .collect(),
+        Fields::Unit => Vec::new(),
+    }
+}
+
+fn field_info(f: &syn::Field, name: String) -> FieldInfo {
+    let docs = collect_docs(&f.attrs);
+    let has_doc = !docs.is_empty();
+    let doc = if has_doc { Some(docs.join(" ")) } else { None };
+    let line = f
+        .ident
+        .as_ref()
+        .map(|i| i.span().start().line)
+        .unwrap_or_else(|| f.ty.span().start().line);
+    FieldInfo {
+        name,
+        ty: normalize_type(&quote::ToTokens::to_token_stream(&f.ty).to_string()),
+        line,
+        has_doc,
+        doc,
+        vis: vis_to_string(&f.vis),
+    }
+}
+
+/// Collapse `Vec < Criterion >` (quote-rendered) into `Vec<Criterion>`.
+fn normalize_type(s: &str) -> String {
+    s.replace(" <", "<")
+        .replace("< ", "<")
+        .replace(" >", ">")
+        .replace("> ", ">")
+        .replace("( ", "(")
+        .replace(" )", ")")
+        .replace(" ,", ",")
+        .replace(", ", ",")
+}
+
+fn vis_to_string(v: &Visibility) -> String {
+    match v {
+        Visibility::Inherited => String::new(),
+        Visibility::Public(_) => "pub".to_string(),
+        Visibility::Restricted(r) => {
+            let last = r
+                .path
+                .segments
+                .last()
+                .map(|s| s.ident.to_string())
+                .unwrap_or_default();
+            format!("pub({last})")
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -322,5 +394,58 @@ mod tests {
         assert_eq!(a.exposed.len(), 1);
         assert_eq!(a.tests.len(), 1);
         assert_eq!(a.tests[0].name, "add_basic");
+    }
+
+    #[test]
+    fn struct_fields_extracted_with_doc_status() {
+        let src = r#"
+            /// A widget.
+            pub struct Widget {
+                /// The widget's name.
+                pub name: String,
+                pub count: i32,
+                pub(crate) id: u64,
+            }
+        "#;
+        let f = syn::parse_file(src).unwrap();
+        let a = analyze_syntax(Path::new("t.rs"), &f);
+        let s = &a.exposed[0];
+        assert_eq!(s.fields.len(), 3);
+        assert!(s.has_undocumented_fields);
+        assert_eq!(s.fields[0].name, "name");
+        assert!(s.fields[0].has_doc);
+        assert_eq!(s.fields[0].doc.as_deref(), Some(" The widget's name."));
+        assert_eq!(s.fields[1].name, "count");
+        assert!(!s.fields[1].has_doc);
+        assert_eq!(s.fields[1].vis, "pub");
+        assert_eq!(s.fields[2].name, "id");
+        assert_eq!(s.fields[2].vis, "pub(crate)");
+    }
+
+    #[test]
+    fn struct_with_all_documented_fields_has_no_undoc_flag() {
+        let src = r#"
+            pub struct Clean {
+                /// a
+                pub a: i32,
+                /// b
+                pub b: String,
+            }
+        "#;
+        let f = syn::parse_file(src).unwrap();
+        let a = analyze_syntax(Path::new("t.rs"), &f);
+        let s = &a.exposed[0];
+        assert_eq!(s.fields.len(), 2);
+        assert!(!s.has_undocumented_fields);
+    }
+
+    #[test]
+    fn normalize_type_compacts_generic_whitespace() {
+        assert_eq!(normalize_type("Vec < Criterion >"), "Vec<Criterion>");
+        assert_eq!(normalize_type("Option < String >"), "Option<String>");
+        assert_eq!(
+            normalize_type("HashMap < String , Vec < u8 > >"),
+            "HashMap<String,Vec<u8>>"
+        );
     }
 }

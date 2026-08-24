@@ -5,7 +5,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    // v0.0.3 will proxy WebSocket to the Rust daemon on 3080
-    // proxy: { "/ws": { target: "ws://127.0.0.1:3080", ws: true } }
+    proxy: {
+      // Proxy to `uh-devtool serve` running on 7700.
+      // Run with: cargo run -p uh-devtool -- serve --root crates --port 7700
+      "/api": {
+        target: "http://127.0.0.1:7700",
+        changeOrigin: true,
+      },
+    },
   },
 });
