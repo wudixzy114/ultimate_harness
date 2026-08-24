@@ -354,3 +354,134 @@
 }
 .review-df__row code { color: #ce9178; }
 .review-df__row ul { margin: 0; padding-left: 16px; }
+
+/* ---- ItemHeader (used by DetailPanel for every kind) ---- */
+
+.review-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #252526;
+  border-bottom: 1px solid #3c3c3c;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.review-item-header__name {
+  font-family: ui-monospace, "Consolas", monospace;
+  color: #9cdcfe;
+  font-size: 13px;
+}
+
+/* ---- VariantTable ---- */
+
+.review-variants {
+  padding: 8px 12px;
+}
+.review-variants--empty {
+  color: #888;
+  font-style: italic;
+  padding: 12px;
+}
+.review-variants__head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #888;
+  padding: 4px 0 8px 0;
+  letter-spacing: 0.05em;
+}
+.review-variants__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.review-variants__table th {
+  text-align: left;
+  font-weight: 500;
+  color: #888;
+  padding: 4px 8px;
+  border-bottom: 1px solid #3c3c3c;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.review-variants__table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #2a2a2a;
+  vertical-align: top;
+}
+.review-variants__name { font-family: ui-monospace, "Consolas", monospace; }
+.review-variants__doc { color: #666; }
+.review-variants__line { color: #888; font-size: 11px; font-family: ui-monospace, "Consolas", monospace; }
+
+/* ---- MethodList ---- */
+
+.review-methods {
+  padding: 8px 12px;
+}
+.review-methods--empty {
+  color: #888;
+  font-style: italic;
+  padding: 12px;
+}
+.review-methods__head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #888;
+  padding: 4px 0 8px 0;
+  letter-spacing: 0.05em;
+}
+.review-methods__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.review-methods__table th {
+  text-align: left;
+  font-weight: 500;
+  color: #888;
+  padding: 4px 8px;
+  border-bottom: 1px solid #3c3c3c;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.review-methods__table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #2a2a2a;
+  vertical-align: top;
+}
+.review-methods__sig { font-family: ui-monospace, "Consolas", monospace; color: #dcdcaa; }
+.review-methods__doc { color: #666; }
+.review-methods__line { color: #888; font-size: 11px; font-family: ui-monospace, "Consolas", monospace; }
+
+/* ---- DocPanel ---- */
+
+.review-doc {
+  padding: 0;
+}
+.review-doc__empty {
+  color: #888;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+/* ---- SignaturePanel (v0.1 placeholder) ---- */
+
+.review-sig {
+  padding: 12px;
+}
+.review-sig__placeholder {
+  color: #888;
+  font-style: italic;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.review-sig__name {
+  font-family: ui-monospace, "Consolas", monospace;
+  color: #dcdcaa;
+}

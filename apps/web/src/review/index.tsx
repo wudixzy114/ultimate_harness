@@ -4,8 +4,7 @@ import { fetchFile, fetchIndex } from "./api";
 import type { FileAnalysis, FileSummary, PubItem } from "./types";
 import { FileTree } from "./FileTree";
 import { ExposedTree } from "./ExposedTree";
-import { FieldTable } from "./FieldTable";
-import { DetailPanel } from "./DataFlowPanel";
+import { DetailPanel } from "./DetailPanel";
 
 export function Review() {
   const [files, setFiles] = useState<FileSummary[] | null>(null);
@@ -14,7 +13,6 @@ export function Review() {
   const [current, setCurrent] = useState<FileAnalysis | null>(null);
   const [currentErr, setCurrentErr] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
-  const [selectedField, setSelectedField] = useState<string | null>(null);
 
   // initial index load
   useEffect(() => {
@@ -26,7 +24,7 @@ export function Review() {
       .catch((e) => setFilesErr(String(e)));
   }, []);
 
-  // poll index every 2s (cheap; MVP — no SSE yet)
+  // poll index every 2s
   useEffect(() => {
     const t = setInterval(() => {
       fetchIndex()
@@ -47,7 +45,6 @@ export function Review() {
       .then((a) => {
         setCurrent(a);
         setSelectedItem(null);
-        setSelectedField(null);
       })
       .catch((e) => setCurrentErr(String(e)));
   }, [selectedFile]);
@@ -70,7 +67,13 @@ export function Review() {
 
   const detailSubject = useMemo(() => {
     if (!current) return null;
-    if (selectedItemObject) return { kind: "item" as const, item: selectedItemObject };
+    if (selectedItemObject) {
+      return {
+        kind: "item" as const,
+        item: selectedItemObject,
+        onSelectNested: setSelectedItem,
+      };
+    }
     return {
       kind: "file" as const,
       purpose: current.purpose,
@@ -131,21 +134,6 @@ export function Review() {
           )}
         </section>
         <section className="review__right">
-          {selectedItemObject ? (
-            <>
-              <div className="review__right-head">
-                {selectedItemObject.kind} {selectedItemObject.name}
-                {selectedItemObject.fields && selectedItemObject.fields.length > 0
-                  ? ` · ${selectedItemObject.fields.length} fields`
-                  : ""}
-              </div>
-              <FieldTable
-                item={selectedItemObject}
-                selectedField={selectedField}
-                onSelectField={setSelectedField}
-              />
-            </>
-          ) : null}
           <DetailPanel subject={detailSubject} />
         </section>
       </main>

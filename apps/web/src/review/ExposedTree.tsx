@@ -37,10 +37,11 @@ function Item({
   onSelect: (name: string) => void;
 }) {
   const isActive = selected === item.name;
-  const flags: string[] = [];
-  if (item.kind === "struct" && item.has_undocumented_fields) flags.push("undoc");
-  if (item.data_flow) flags.push("data-flow");
-  if ((item.invariants?.length ?? 0) > 0) flags.push("inv");
+  // Tree depth rule: only `mod` may expand one level. Every other kind
+  // shows as a single row — its content lives in the right-side panel.
+  const canExpand =
+    item.kind === "mod" && (item.children?.length ?? 0) > 0;
+  const flags = computeFlags(item);
   return (
     <li>
       <button
@@ -48,7 +49,7 @@ function Item({
           "review-exposed__item" + (isActive ? " review-exposed__item--active" : "")
         }
         onClick={() => onSelect(item.name)}
-        style={{ paddingLeft: `${depth * 12 + 8}px` }}
+        style={{ paddingLeft: `${depth * 16 + 8}px` }}
       >
         <span className={`review-exposed__kind review-exposed__kind--${item.kind}`}>
           {item.kind}
@@ -57,7 +58,10 @@ function Item({
         {flags.length > 0 ? (
           <span className="review-exposed__flags">
             {flags.map((f) => (
-              <span key={f} className={`review-exposed__flag review-exposed__flag--${f}`}>
+              <span
+                key={f}
+                className={`review-exposed__flag review-exposed__flag--${f}`}
+              >
                 {f}
               </span>
             ))}
@@ -65,9 +69,9 @@ function Item({
         ) : null}
         <span className="review-exposed__line">:{item.line}</span>
       </button>
-      {item.children && item.children.length > 0 ? (
+      {canExpand ? (
         <ul className="review-exposed">
-          {item.children.map((c) => (
+          {item.children!.map((c) => (
             <Item
               key={c.name}
               item={c}
@@ -80,4 +84,12 @@ function Item({
       ) : null}
     </li>
   );
+}
+
+function computeFlags(item: PubItem): string[] {
+  const flags: string[] = [];
+  if (item.kind === "struct" && item.has_undocumented_fields) flags.push("undoc");
+  if (item.data_flow) flags.push("df");
+  if ((item.invariants?.length ?? 0) > 0) flags.push("inv");
+  return flags;
 }
