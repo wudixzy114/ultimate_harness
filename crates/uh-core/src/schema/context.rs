@@ -4,6 +4,10 @@
 //! and a **variable suffix**. Working Memory and Step Memory MUST
 //! live in the variable suffix. This module gives the web frontend
 //! a structured view of where the context is.
+//!
+//! This is the canonical example of "data-flow with side-effects on
+//! the cache boundary" — any change to `is_cacheable` flags here
+//! is a potential prompt-cache regression.
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -13,6 +17,14 @@ use crate::ids::SessionId;
 /// A snapshot of the current context layout. Emitted to the web
 /// frontend so users can see what the LLM "sees" and how much
 /// of the context is cacheable.
+///
+/// # @tag schema observer
+/// # @invariant
+/// The sum of `layers[i].tokens` for `is_cacheable == true` MUST equal
+/// `cache_boundary.prefix_tokens` (cacheable prefix is the union of
+/// cacheable layers).
+/// The sum for `is_cacheable == false` MUST equal
+/// `total_input_tokens - cache_boundary.prefix_tokens`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ContextSnapshot {
     pub session_id: SessionId,
@@ -49,6 +61,15 @@ pub struct CacheBoundary {
     pub cache_hits_estimated: u32,
 }
 
+/// A single layer of the LLM context. Layers are ordered: cacheable
+/// ones first, then the cache boundary, then variable (non-cacheable)
+/// ones.
+///
+/// # @tag schema
+/// # @invariant
+/// `LayerKind::WorkingMemory` and `LayerKind::StepMemory` MUST have
+/// `is_cacheable = false`. All other `LayerKind` variants SHOULD have
+/// `is_cacheable = true` to enable prompt caching.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ContextLayer {
     pub layer: LayerKind,

@@ -3,6 +3,10 @@
 //! A Skill is a structured capability that the agent can invoke.
 //! It observes Plan/Step lifecycle events and may emit Plans or
 //! transform the Working Memory.
+//!
+//! The trait is the **only** legal way for a third-party capability
+//! to touch core state. Concrete skills live in their own crates
+//! (e.g. `uh-skill-plan-first`).
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -14,6 +18,12 @@ use crate::schema::memory::WorkingMemory;
 use crate::schema::plan::{Plan, Retrospective, Step};
 
 /// Metadata describing a Skill (used by UI and loader).
+///
+/// # @tag schema
+/// # @invariant
+/// `id` MUST be unique across the loaded skill registry.
+/// `version` MUST be a semver string; the loader rejects duplicates
+/// of equal `id` but mismatched `version` unless `--force` is set.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SkillManifest {
     pub id: SkillId,
@@ -43,6 +53,16 @@ pub struct SkillOutput {
 }
 
 /// Events the agent loop fires into skills. Each maps to a UI action.
+///
+/// # @tag schema executor
+/// # @data-flow
+/// input: agent loop state (Plan / Step / Delta / Context)
+/// output: SkillEvent (discriminated by `type`)
+/// depends-on: Plan / Step / Delta / Context lifecycle
+/// # @invariant
+/// Every `Plan` referenced inside a `SkillEvent` MUST already be
+/// persisted in the session store before the event is dispatched —
+/// skills are observers, not writers of truth.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum SkillEvent {
@@ -74,3 +94,4 @@ pub trait Skill: Send + Sync {
         SkillOutput::default()
     }
 }
+

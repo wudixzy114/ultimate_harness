@@ -1,0 +1,16 @@
+[package]
+name = "uh-devtool-analyze"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Rust source analyzer for the Ultimate Harness code viewer (read-only, no uh-core dep)"
+
+[dependencies]
+syn = { workspace = true }
+proc-macro2 = { version = "1", features = ["span-locations"] }
+quote = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+walkdir = { workspace = true }

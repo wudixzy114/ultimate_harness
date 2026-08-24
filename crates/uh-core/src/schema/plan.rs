@@ -1,4 +1,9 @@
 //! Plan and Step types — the heart of structured iteration.
+//!
+//! The LLM emits one `Plan` per task, the user approves/modifies via
+//! `Delta`, the LLM executes `Step`s and reports `Retrospective`s.
+//! All state is here — there is no natural-language "current task"
+//! floating around.
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -9,6 +14,12 @@ use crate::ids::{PlanId, SessionId, StepId};
 /// A Plan is the top-level iteration object. The LLM emits one when
 /// it receives a task; the user approves/modifies it via Deltas; the
 /// LLM executes its steps and reports retrospectives.
+///
+/// # @tag schema
+/// # @invariant
+/// Every step that finishes MUST carry a `Retrospective`.
+/// `status` transitions are: `Pending → Running → Done | Failed | Aborted`.
+/// `Unknown` with `blocking: true` MUST be resolved before `Pending → Running`.
 ///
 /// # Example
 ///
@@ -177,6 +188,15 @@ pub enum OutputKind {
     Note,
 }
 
+/// Lifecycle state of a [`Plan`]. `Draft` is the pre-approval state;
+/// `Running` is the post-approval execution state.
+///
+/// # @tag schema
+/// # @invariant
+/// `Draft` is the only state that accepts a fresh plan body from the LLM.
+/// Once in `Running`, the plan body is immutable — only `Retrospective`s
+/// and `status` transitions append. Any state may transition to `Aborted`
+/// on user request.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum PlanStatus {

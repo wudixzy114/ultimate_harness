@@ -1,0 +1,23 @@
+[package]
+name = "uh-devtool"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "CLI / HTTP server for the Ultimate Harness code viewer (read-only, no uh-core dep)"
+
+[[bin]]
+name = "uh-devtool"
+path = "src/main.rs"
+
+[dependencies]
+uh-devtool-analyze = { path = "../uh-devtool-analyze" }
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+walkdir = { workspace = true }
+notify = { workspace = true }
+tiny_http = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

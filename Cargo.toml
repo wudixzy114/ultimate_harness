@@ -4,7 +4,16 @@ members = [
     "crates/uh-core",
     "crates/uh-skill-plan-first",
     "crates/uh",
+    "tools/uh-devtool-analyze",
+    "tools/uh-devtool",
 ]
+
+# Boundary rule:
+#   tools/* MUST NOT depend on crates/*.
+#   uh-devtool-analyze reads .rs source via filesystem only,
+#   it never imports uh-core. This keeps the code viewer
+#   physically independent and trivially extractable to a
+#   separate repo / crate if needed.
 
 [workspace.package]
 version = "0.1.0"
@@ -26,6 +35,14 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 async-trait = "0.1"
 futures = "0.3"
+
+# Dev toolchain (tools/*)
+syn = { version = "2", features = ["full", "extra-traits", "parsing"] }
+quote = "1"
+walkdir = "2"
+notify = "6"
+clap = { version = "4", features = ["derive"] }
+tiny_http = "0.12"
 
 # Profile
 [profile.release]
