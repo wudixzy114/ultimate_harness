@@ -1,1 +1,29 @@
+# Rust
 /target
+**/*.rs.bk
+Cargo.lock.bak
+
+# Node / pnpm
+node_modules/
+.pnpm-store/
+dist/
+.vite/
+*.log
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Project-local
+/sessions
+/working
+*.local
+.env
+.env.local
+
+# Keep research artifacts out of the project
+# (they are sibling directories, not project members)
+grok-build/
+deepseek-harness/

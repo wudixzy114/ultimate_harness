@@ -1,6 +1,39 @@
-[package]
-name = "ultimate_harness"
+[workspace]
+resolver = "2"
+members = [
+    "crates/uh-core",
+    "crates/uh-skill-plan-first",
+    "crates/uh",
+]
+exclude = [
+    "grok-build",
+    "deepseek-harness",
+]
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+rust-version = "1.85"
+authors = ["Ultimate Harness Contributors"]
+description = "An agent harness with structured iteration as first-class concern"
 
-[dependencies]
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+async-trait = "0.1"
+futures = "0.3"
+
+# Profile
+[profile.release]
+panic = "abort"
+lto = "thin"
+codegen-units = 1
+strip = true

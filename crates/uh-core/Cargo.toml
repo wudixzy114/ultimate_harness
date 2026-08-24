@@ -1,0 +1,21 @@
+[package]
+name = "uh-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Core schema and runtime interfaces for Ultimate Harness"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+async-trait.workspace = true
+tracing.workspace = true
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"

@@ -1,0 +1,25 @@
+[package]
+name = "uh"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Ultimate Harness binary entry point"
+
+[[bin]]
+name = "uh"
+path = "src/main.rs"
+
+[dependencies]
+uh-core = { path = "../uh-core" }
+uh-skill-plan-first = { path = "../uh-skill-plan-first" }
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+anyhow.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
