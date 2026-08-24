@@ -1,5 +1,7 @@
 # `uh-devtool` — CLI / HTTP / Watch
 
+> **注意**：`check-design` 子命令的当前位置是**权宜之计**——policy enforcement 属于 harness 核心能力，未来会迁出。详见 [`docs/design-first.md`](../../docs/design-first.md) 的"架构归属"小节。
+
 ## 缘由
 
 `uh-devtool` 是 code viewer 的**运行时壳**。它把 `uh-devtool-analyze` 包装成 3 个用户入口：
@@ -34,7 +36,22 @@
 uh-devtool analyze <PATH>            # JSON to stdout
 uh-devtool serve [--root X --port N] # HTTP server
 uh-devtool watch [--root X --port N] # serve + notify
+uh-devtool check-design <PATH>       # verify .rs files have docs.md ancestor
 ```
+
+### `check-design`
+
+实现 design-first 实践（见 `docs/design-first.md`）：
+
+- 递归扫描 `<PATH>` 下所有 `.rs` 文件
+- 对每个文件找**最近祖先的 `docs.md`**（自身目录 → 父目录 → ... → 根）
+- 找不到 → 报告 + `exit 1`
+- 全过 → `exit 0`
+
+可接入：
+- `git pre-commit` 拦截提交
+- CI 在 PR 跑一次
+- `uh` daemon 在 step 执行前 gate
 
 ### HTTP API
 
