@@ -1,0 +1,10 @@
+[2m2026-08-25T03:27:56.760283Z[0m [32m INFO[0m [2muh_daemon::state[0m[2m:[0m AppState initialized [3mprovider[0m[2m=[0mopenai-compat [3mmodel[0m[2m=[0mtest-model [3mtools[0m[2m=[0m5
+[2m2026-08-25T03:27:56.763817Z[0m [32m INFO[0m [2muh[0m[2m:[0m Ultimate Harness v0.1.0 starting on http://127.0.0.1:3090
+[2m2026-08-25T03:27:56.769345Z[0m [32m INFO[0m [2muh_daemon::server[0m[2m:[0m uh-daemon listening [3maddr[0m[2m=[0m127.0.0.1:3090
+[2m2026-08-25T03:28:12.502943Z[0m [32m INFO[0m [2muh_daemon::server[0m[2m:[0m ws connected [3mpeer_id[0m[2m=[0ma0680658-e390-4910-9e8d-a318d3e4be4a
+[2m2026-08-25T03:28:13.013129Z[0m [32m INFO[0m [2muh_daemon::router[0m[2m:[0m queued turn [3mturn_id[0m[2m=[0m6b13a248-889f-46cf-b9e0-e8b44c61db72
+[2m2026-08-25T03:28:13.013984Z[0m [34mDEBUG[0m [2muh_daemon::loop_[0m[2m:[0m calling LLM [3mturn_id[0m[2m=[0m7e3e1147-5e19-4c51-9bc6-11e42993a10c
+[2m2026-08-25T03:28:15.023537Z[0m [33m WARN[0m [2muh_daemon::loop_[0m[2m:[0m LLM error [3mturn_id[0m[2m=[0m7e3e1147-5e19-4c51-9bc6-11e42993a10c [3merror[0m[2m=[0mtransport: error sending request for url (http://127.0.0.1:9999/v1/chat/completions)
+[2m2026-08-25T03:28:15.023954Z[0m [32m INFO[0m [2muh_daemon::loop_[0m[2m:[0m turn finished [3mturn_id[0m[2m=[0m7e3e1147-5e19-4c51-9bc6-11e42993a10c [3mreason[0m[2m=[0mllm_error: transport: error sending request for url (http://127.0.0.1:9999/v1/chat/completions)
+[2m2026-08-25T03:28:20.512735Z[0m [33m WARN[0m [2muh_daemon::server[0m[2m:[0m ws receive error [3merror[0m[2m=[0mIO error: 远程主机强迫关闭了一个现有的连接。 (os error 10054)
+[2m2026-08-25T03:28:20.514094Z[0m [32m INFO[0m [2muh_daemon::server[0m[2m:[0m ws disconnected [3mpeer_id[0m[2m=[0ma0680658-e390-4910-9e8d-a318d3e4be4a

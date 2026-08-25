@@ -18,7 +18,9 @@
 pub mod ids;
 pub mod schema;
 pub mod skill;
+pub mod transport;
 
 pub use ids::*;
 pub use schema::*;
 pub use skill::*;
+pub use transport::*;

@@ -1,0 +1,14 @@
+# Test config for end-to-end daemon verification.
+# Uses a fake key; we won't actually call the LLM.
+
+[server]
+host = "127.0.0.1"
+port = 3090
+
+[llm]
+provider = "openaicompat"
+base_url = "http://127.0.0.1:9999"
+api_key  = "test-key"
+model    = "test-model"
+timeout_secs = 5
+max_retries  = 0

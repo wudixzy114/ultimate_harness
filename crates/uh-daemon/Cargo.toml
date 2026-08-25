@@ -1,0 +1,33 @@
+[package]
+name = "uh-daemon"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "WebSocket + HTTP server, agent loop, and application state for Ultimate Harness"
+
+[dependencies]
+uh-core = { path = "../uh-core" }
+uh-llm = { path = "../uh-llm" }
+uh-tools = { path = "../uh-tools" }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+tokio-stream = { workspace = true }
+futures = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+toml = { workspace = true }
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+must_use_candidate = "allow"

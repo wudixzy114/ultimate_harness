@@ -12,6 +12,7 @@ path = "src/main.rs"
 [dependencies]
 uh-core = { path = "../uh-core" }
 uh-skill-plan-first = { path = "../uh-skill-plan-first" }
+uh-daemon = { path = "../uh-daemon" }
 tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true

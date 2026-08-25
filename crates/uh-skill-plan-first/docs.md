@@ -1,41 +1,65 @@
-# `uh-skill-plan-first` — Plan-First Iteration Skill
+# `uh-skill-plan-first` — 增强版 skill（v0.0.4+ 才启用）
 
-## 缘由
+> **重要**：本 crate **不在 v0.0.3 依赖图里**。它是 harness core 之上的
+> **可选 skill / preset**，不是 harness 的同级能力。
+>
+> v0.0.3 先把核心循环跑通（loop + LLM + 5 个工具），v0.0.4 再接这个 skill。
 
-`uh-skill-plan-first` 是 Ultimate Harness 的**首个具体 Skill**——一个强制"先写 Plan、再执行"的迭代模式。它的存在是为了把"先想清楚再动手"这个工程原则变成**系统行为**，而不是文档建议。
+## 它是什么 / 不是什么
 
-为什么不只是 `uh` 主 crate 的一个函数：Skill 是 `uh-core::Skill` trait 的实现，按约定必须独立 crate——这样 Skill 之间的依赖是显式的 `Cargo.toml` 依赖，不是隐式的 import。
+### 是
+- **一个 skill** —— 可以通过 preset 在启动时启用
+- **增强版** —— 在 harness core 之上加一层结构化迭代
+- **可选** —— 不启用就跟没装一样，harness 照常工作
 
-## 解决的问题
+### 不是
+- ❌ Harness 的核心能力（harness 没它也能跑）
+- ❌ Harness 的同级模块（它依赖 daemon，不被 daemon 依赖）
+- ❌ v0.0.3 必需的部分
 
-1. **AI 直觉执行的脆弱性**——LLM 倾向于"看到 task → 直接给答案"，跳过了"目标 / 成功标准 / 风险 / 回退"的明确化。
-2. **人类信任成本**——用户不敢让 AI 直接改大文件，因为不知道它会做什么。
-3. **Review 表面**——没有 Plan，回顾就是 "what happened"；有 Plan，回顾是 "what happened vs what we said"。
+## 设计哲学（参考，不在 v0.0.3 范围）
 
-## 设计哲学
+1. **plan-first 是 skill 的强形式** —— 强制每个 task 都有 Plan、每个 step
+   都有 Retrospective
+2. **Plan + Delta 是 structured iteration 的核心** —— 用户通过 Delta 控制
+   Plan 演化，而不是在 LLM 上下文里反复读 Plan 全文
+3. **Token 经济性** —— 同等信息的传递，结构化比散文省 ~7x token
 
-1. **Plan 是契约**——Plan 不是建议，是结构化的承诺：`goal` / `success_criteria` / `assumptions` / `unknowns` / `steps`。
-2. **每步都有 Retrospective**——`matches_plan` 字段强制 LLM 自我审计。
-3. **Unknown 是 first-class**——`blocking: true` 的 unknown 必须先解决，plan 才能从 Draft → Running。
-4. **Delta 是唯一的修改入口**——plan body 一旦进入 Running 不可改，所有调整走 Delta。
+## v0.0.4 计划（要等 core 跑通）
 
-## 具体细节设计
+- `Skill` trait 重新设计成 `async fn on_event(event) -> Option<Action>`
+- plan-first skill 监听 task_submitted / step_starting / step_finishing 事件
+- 注入 plan 必填、step retrospective 必填的强制检查
+- UI 上挂回 PlanPanel / ContextPanel / DeltaLog
+- 加 preset 配置（`uh.toml` 里 `[presets]` section）
 
-### Skill 实现
+## v0.0.3 状态
 
-实现 `uh_core::Skill` trait，监听 `SkillEvent` 中的关键事件：
+- 现有代码：v0.0.1 写的 skeleton（无强制逻辑）
+- 现状：能编译、跑、装入 daemon，但**没有 wire-up**
+- v0.0.3 不会调用它
+- v0.0.4 wire-up 时再改
 
-- `TaskSubmitted` → 引导 LLM 输出 Plan schema。
-- `PlanReady` → 强制把 Plan 渲染到 web，等用户批准。
-- `DeltaSubmitted` → 应用 Delta 到 Plan。
-- `StepStarting` / `StepFinishing` → 强制 LLM 写 Retrospective。
+## 与 harness core 的关系
 
-### 与 web 的关系
+```
+v0.0.3 架构:
+  uh-daemon (核心)
+    └─ uh-llm (LLM trait + OpenAI compat)
+    └─ uh-tools (5 个基础工具)
+    [uh-skill-plan-first 装在但不被调用]
 
-`PlanPanel` / `DeltaLog` 组件直接消费 `uh-core` 的 Plan/Delta TS 镜像——`uh-skill-plan-first` 不引入新的 schema，只定义行为。
+v0.0.4 架构:
+  uh-daemon (核心)
+    └─ uh-llm
+    └─ uh-tools
+    └─ SkillRegistry (新增)
+         └─ uh-skill-plan-first (可选，按 preset 加载)
+```
 
-## 演进
+## 范围外
 
-v0.1：基础 plan-first 流程。
-v0.2：支持"嵌套 plan"（step 内部再触发 sub-plan）。
-v1.0：plan 模板 + 跨 session 复用。
+- v0.0.3 不实现任何强制逻辑
+- v0.0.4 之前的 wire-up
+- UI 集成（PlanPanel 暂时挂在产品页但不被使用）
+- preset 系统

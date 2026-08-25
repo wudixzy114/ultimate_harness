@@ -1,0 +1,44 @@
+# Ultimate Harness configuration
+# Copy to `uh.toml` and edit.
+
+[server]
+host = "127.0.0.1"
+port = 3080
+
+# LLM provider. v0.0.3 supports "openai-compat" (OpenAI, DeepSeek,
+# vLLM, Ollama, LM Studio, Azure OpenAI, etc.)
+[llm]
+provider = "openai-compat"
+
+# Examples (uncomment one):
+# DeepSeek
+base_url = "https://api.deepseek.com"
+api_key  = "sk-your-deepseek-key-here"
+model    = "deepseek-chat"
+
+# OpenAI
+# base_url = "https://api.openai.com"
+# api_key  = "sk-your-openai-key-here"
+# model    = "gpt-4o"
+
+# Local Ollama (with OpenAI compat)
+# base_url = "http://127.0.0.1:11434/v1"
+# api_key  = "ollama"   # any non-empty string
+# model    = "llama3.2"
+
+# Local vLLM
+# base_url = "http://127.0.0.1:8000"
+# api_key  = "vllm"
+# model    = "meta-llama/Llama-3.1-8B-Instruct"
+
+timeout_secs = 120
+max_retries  = 3
+
+# Optional: temperature / max_tokens are passed to the LLM as defaults
+# temperature = 0.7
+# max_tokens  = 4096
+
+# Tool whitelist. Empty = all default tools (read_file, write_file,
+# edit_file, list_dir, bash).
+# Example: only file ops, no shell
+# enable = ["read_file", "write_file", "edit_file", "list_dir"]

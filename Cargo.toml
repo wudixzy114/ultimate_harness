@@ -4,12 +4,14 @@ members = [
     "crates/uh-core",
     "crates/uh-skill-plan-first",
     "crates/uh",
+    "crates/uh-daemon",
+    "crates/uh-llm",
+    "crates/uh-tools",
     "tools/uh-devtool",
     "tools/uh-devtool-analyze",
 ]
 exclude = [
-    "grok-build",
-    "deepseek-harness",
+    "research",
 ]
 
 [workspace.package]
@@ -21,9 +23,12 @@ authors = ["Ultimate Harness Contributors"]
 description = "An agent harness with structured iteration as first-class concern"
 
 [workspace.dependencies]
+# Core
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
+tokio-util = "0.7"
+tokio-stream = "0.1"
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "2"
@@ -33,10 +38,26 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 async-trait = "0.1"
 futures = "0.3"
 
+# Web / WS
+axum = { version = "0.7", features = ["ws", "macros"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "trace"] }
+http = "1"
+
+# HTTP client (for LLM)
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+rustls = { version = "0.23", features = ["aws_lc_rs"] }
+aws-lc-rs = "1"
+
+# Config
+toml = "0.8"
+
+# File watching (for uh-devtool only)
+notify = "6"
+
 # dev-only (uh-devtool, uh-devtool-analyze)
 clap = { version = "4", features = ["derive"] }
 walkdir = "2"
-notify = "6"
 tiny_http = "0.12"
 syn = { version = "2", features = ["full", "extra-traits", "parsing"] }
 proc-macro2 = "1"
