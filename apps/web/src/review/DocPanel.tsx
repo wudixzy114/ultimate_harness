@@ -1,5 +1,7 @@
 import type { PubItem } from "./types";
 import { ExposedTree } from "./ExposedTree";
+import { Section } from "./common";
+import { Inbox } from "lucide-react";
 
 interface Props {
   item: PubItem;
@@ -13,21 +15,29 @@ interface Props {
 export function DocPanel({ item, onSelectNested }: Props) {
   const isMod = item.kind === "mod";
   return (
-    <div className="review-doc">
+    <div className="space-y-2">
       {isMod ? (
-        <div className="review-section">
-          <div className="review-section__title">contents</div>
+        <Section title="contents">
           {item.children && item.children.length > 0 ? (
-            <ExposedTree
-              items={item.children}
-              selected={null}
-              onSelect={onSelectNested ?? (() => {})}
-            />
+            <div className="rounded-md border border-border/60 bg-background/30">
+              <ExposedTree
+                items={item.children}
+                selected={null}
+                onSelect={onSelectNested ?? (() => {})}
+              />
+            </div>
           ) : (
-            <div className="review-doc__empty">no public items</div>
+            <div className="flex flex-col items-center gap-1 rounded-md border border-dashed border-border/60 bg-background/30 py-6 text-center font-mono text-xs text-muted-foreground">
+              <Inbox className="h-4 w-4 opacity-50" />
+              no public items
+            </div>
           )}
+        </Section>
+      ) : (
+        <div className="rounded-md border border-dashed border-border/60 bg-background/30 px-3 py-6 text-center font-mono text-xs text-muted-foreground">
+          (no body extraction yet for {item.kind})
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

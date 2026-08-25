@@ -4,24 +4,21 @@ members = [
     "crates/uh-core",
     "crates/uh-skill-plan-first",
     "crates/uh",
-    "tools/uh-devtool-analyze",
     "tools/uh-devtool",
+    "tools/uh-devtool-analyze",
 ]
-
-# Boundary rule:
-#   tools/* MUST NOT depend on crates/*.
-#   uh-devtool-analyze reads .rs source via filesystem only,
-#   it never imports uh-core. This keeps the code viewer
-#   physically independent and trivially extractable to a
-#   separate repo / crate if needed.
+exclude = [
+    "grok-build",
+    "deepseek-harness",
+]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
 rust-version = "1.85"
-authors = ["zongyu xie"]
-description = "Ultimate agent harness"
+authors = ["Ultimate Harness Contributors"]
+description = "An agent harness with structured iteration as first-class concern"
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -36,13 +33,14 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 async-trait = "0.1"
 futures = "0.3"
 
-# Dev toolchain (tools/*)
-syn = { version = "2", features = ["full", "extra-traits", "parsing"] }
-quote = "1"
+# dev-only (uh-devtool, uh-devtool-analyze)
+clap = { version = "4", features = ["derive"] }
 walkdir = "2"
 notify = "6"
-clap = { version = "4", features = ["derive"] }
 tiny_http = "0.12"
+syn = { version = "2", features = ["full", "extra-traits", "parsing"] }
+proc-macro2 = "1"
+quote = "1"
 
 # Profile
 [profile.release]

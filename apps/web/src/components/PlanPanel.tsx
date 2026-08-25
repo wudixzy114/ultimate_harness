@@ -1,6 +1,44 @@
 import { useState } from "react";
-import type { Plan, Step, StepIntent, StepStatus } from "../types/plan";
-import type { Delta, DeltaAction } from "../types/delta";
+import {
+  Check,
+  X,
+  SkipForward,
+  Pencil,
+  CircleDashed,
+  Search,
+  Wrench,
+  CheckCheck,
+  HelpCircle,
+  Eye,
+  MessageSquare,
+  ChevronDown,
+} from "lucide-react";
+import type { Plan, Step, StepIntent, StepStatus } from "@/types/plan";
+import type { Delta, DeltaAction } from "@/types/delta";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
+
+const INTENT_ICON: Record<StepIntent, React.ComponentType<{ className?: string }>> = {
+  investigate: Search,
+  implement: Wrench,
+  verify: CheckCheck,
+  ask_user: HelpCircle,
+  review: Eye,
+  communicate: MessageSquare,
+};
 
 const INTENT_LABEL: Record<StepIntent, string> = {
   investigate: "Investigate",
@@ -11,22 +49,25 @@ const INTENT_LABEL: Record<StepIntent, string> = {
   communicate: "Communicate",
 };
 
-const INTENT_ICON: Record<StepIntent, string> = {
-  investigate: "🔍",
-  implement: "✏️",
-  verify: "✓",
-  ask_user: "❓",
-  review: "👁",
-  communicate: "💬",
+const STATUS_VARIANT: Record<
+  StepStatus,
+  "outline" | "warning" | "success" | "destructive" | "secondary" | "default"
+> = {
+  pending: "outline",
+  in_progress: "warning",
+  done: "success",
+  failed: "destructive",
+  skipped: "secondary",
+  blocked: "destructive",
 };
 
-const STATUS_COLOR: Record<StepStatus, string> = {
-  pending: "var(--c-pending)",
-  in_progress: "var(--c-progress)",
-  done: "var(--c-done)",
-  failed: "var(--c-failed)",
-  skipped: "var(--c-skipped)",
-  blocked: "var(--c-blocked)",
+const STATUS_DOT: Record<StepStatus, string> = {
+  pending: "bg-status-pending",
+  in_progress: "bg-status-progress",
+  done: "bg-status-done",
+  failed: "bg-status-failed",
+  skipped: "bg-status-skipped",
+  blocked: "bg-status-blocked",
 };
 
 interface Props {
@@ -35,83 +76,121 @@ interface Props {
 }
 
 export function PlanPanel({ plan, onDelta }: Props) {
+  const verifiedCount = plan.success_criteria.filter((c) => c.verified).length;
+  const totalCriteria = plan.success_criteria.length;
+
   return (
-    <article className="plan">
-      <header className="plan__header">
-        <h1 className="plan__title">{plan.title}</h1>
-        <div className="plan__meta">
-          <span className="plan__status" data-status={plan.status}>
-            {plan.status.replace("_", " ")}
+    <div className="mx-auto max-w-3xl space-y-6 p-8">
+      {/* Header card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1.5">
+              <CardTitle className="text-xl">{plan.title}</CardTitle>
+              <p className="text-sm text-muted-foreground">{plan.goal}</p>
+            </div>
+            <Badge variant={STATUS_VARIANT[plan.status as StepStatus] ?? "outline"}>
+              {plan.status.replace("_", " ")}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center gap-x-4 gap-y-1.5 font-mono text-xs text-muted-foreground">
+          <span>
+            id <span className="text-foreground/80">{plan.id.slice(0, 8)}</span>
           </span>
-          <code className="plan__id">id: {plan.id.slice(0, 8)}</code>
-        </div>
-      </header>
+          <Separator orientation="vertical" className="h-3" />
+          <span>
+            session <span className="text-foreground/80">{plan.session_id.slice(0, 8)}</span>
+          </span>
+          <Separator orientation="vertical" className="h-3" />
+          <span>
+            {plan.steps.length} step{plan.steps.length === 1 ? "" : "s"}
+          </span>
+          {totalCriteria > 0 && (
+            <>
+              <Separator orientation="vertical" className="h-3" />
+              <span>
+                {verifiedCount}/{totalCriteria} criteria verified
+              </span>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
-      <section className="plan__section">
-        <h2>Task</h2>
-        <p className="plan__task">{plan.task}</p>
-      </section>
+      {/* Task */}
+      <Section title="Task">
+        <p className="text-sm leading-relaxed text-foreground/90">{plan.task}</p>
+      </Section>
 
-      <section className="plan__section">
-        <h2>Goal</h2>
-        <p className="plan__goal">{plan.goal}</p>
-      </section>
-
+      {/* Success criteria */}
       {plan.success_criteria.length > 0 && (
-        <section className="plan__section">
-          <h2>
-            Success criteria{" "}
-            <span className="plan__count">
-              {plan.success_criteria.filter((c) => c.verified).length}/
-              {plan.success_criteria.length}
-            </span>
-          </h2>
-          <ul className="plan__list">
+        <Section
+          title="Success criteria"
+          count={`${verifiedCount}/${plan.success_criteria.length}`}
+        >
+          <ul className="space-y-1.5">
             {plan.success_criteria.map((c) => (
-              <li key={c.id} data-verified={c.verified}>
-                <span className="plan__checkbox">
+              <li
+                key={c.id}
+                className={`flex items-start gap-2.5 rounded-md border border-border/60 bg-card/40 px-3 py-2 text-sm ${
+                  c.verified ? "text-emerald-400 line-through" : "text-foreground/90"
+                }`}
+              >
+                <span className="mt-0.5 font-mono text-xs text-muted-foreground">
                   {c.verified ? "☑" : "☐"}
                 </span>
-                {c.text}
+                <span>{c.text}</span>
               </li>
             ))}
           </ul>
-        </section>
+        </Section>
       )}
 
+      {/* Assumptions */}
       {plan.assumptions.length > 0 && (
-        <section className="plan__section">
-          <h2>Assumptions</h2>
-          <ul className="plan__list">
+        <Section title="Assumptions">
+          <ul className="space-y-1.5">
             {plan.assumptions.map((a) => (
-              <li key={a.id} data-critical={a.critical}>
-                {a.critical && <span className="plan__badge">critical</span>}
-                {a.text}
+              <li
+                key={a.id}
+                className={`flex items-start gap-2.5 rounded-md border bg-card/40 px-3 py-2 text-sm ${
+                  a.critical ? "border-l-2 border-l-amber-500 border-border/60" : "border-border/60"
+                }`}
+              >
+                {a.critical && (
+                  <Badge variant="warning" className="shrink-0">critical</Badge>
+                )}
+                <span className="text-foreground/90">{a.text}</span>
               </li>
             ))}
           </ul>
-        </section>
+        </Section>
       )}
 
+      {/* Unknowns */}
       {plan.unknowns.length > 0 && (
-        <section className="plan__section">
-          <h2>Unknowns</h2>
-          <ul className="plan__list">
+        <Section title="Unknowns">
+          <ul className="space-y-1.5">
             {plan.unknowns.map((u) => (
-              <li key={u.id} data-blocking={u.blocking}>
-                {u.blocking && <span className="plan__badge">blocking</span>}
-                {u.text}
+              <li
+                key={u.id}
+                className={`flex items-start gap-2.5 rounded-md border bg-card/40 px-3 py-2 text-sm ${
+                  u.blocking ? "border-l-2 border-l-red-500 border-border/60" : "border-border/60"
+                }`}
+              >
+                {u.blocking && (
+                  <Badge variant="danger" className="shrink-0">blocking</Badge>
+                )}
+                <span className="text-foreground/90">{u.text}</span>
               </li>
             ))}
           </ul>
-        </section>
+        </Section>
       )}
 
-      <section className="plan__section plan__section--steps">
-        <h2>
-          Steps <span className="plan__count">{plan.steps.length}</span>
-        </h2>
-        <ol className="steps">
+      {/* Steps */}
+      <Section title="Steps" count={String(plan.steps.length)}>
+        <ol className="space-y-3">
           {plan.steps.map((step) => (
             <StepCard
               key={step.id}
@@ -129,14 +208,16 @@ export function PlanPanel({ plan, onDelta }: Props) {
             />
           ))}
         </ol>
-      </section>
+      </Section>
 
+      {/* Plan actions */}
       {onDelta && (
-        <section className="plan__section plan__section--actions">
-          <h2>Plan actions</h2>
-          <div className="plan__buttons">
-            <button
-              className="btn btn--primary"
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Plan actions</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            <Button
               onClick={() =>
                 onDelta({
                   id: crypto.randomUUID(),
@@ -147,12 +228,12 @@ export function PlanPanel({ plan, onDelta }: Props) {
                 })
               }
             >
-              ✓ Approve plan
-            </button>
-            <button
-              className="btn"
+              <Check className="h-4 w-4" /> Approve plan
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => {
-                const reason = prompt("Reason for rejection?");
+                const reason = window.prompt("Reason for rejection?");
                 if (!reason) return;
                 onDelta({
                   id: crypto.randomUUID(),
@@ -163,12 +244,12 @@ export function PlanPanel({ plan, onDelta }: Props) {
                 });
               }}
             >
-              ✗ Reject plan
-            </button>
-            <button
-              className="btn btn--danger"
+              <X className="h-4 w-4" /> Reject
+            </Button>
+            <Button
+              variant="destructive"
               onClick={() => {
-                const reason = prompt("Reason to abort?");
+                const reason = window.prompt("Reason to abort?");
                 if (!reason) return;
                 onDelta({
                   id: crypto.randomUUID(),
@@ -179,12 +260,38 @@ export function PlanPanel({ plan, onDelta }: Props) {
                 });
               }}
             >
-              ⏹ Abort
-            </button>
-          </div>
-        </section>
+              <CircleDashed className="h-4 w-4" /> Abort
+            </Button>
+          </CardContent>
+        </Card>
       )}
-    </article>
+    </div>
+  );
+}
+
+function Section({
+  title,
+  count,
+  children,
+}: {
+  title: string;
+  count?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center gap-2">
+        <h2 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {title}
+        </h2>
+        {count && (
+          <Badge variant="secondary" className="font-mono">
+            {count}
+          </Badge>
+        )}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -194,175 +301,291 @@ interface StepProps {
 }
 
 function StepCard({ step, onDelta }: StepProps) {
-  const [editing, setEditing] = useState(false);
-
-  const startEditing = () => setEditing(true);
+  const Icon = INTENT_ICON[step.intent];
 
   return (
     <li
-      className="step"
-      data-status={step.status}
-      style={{ borderLeftColor: STATUS_COLOR[step.status] }}
+      className={`group relative overflow-hidden rounded-lg border border-border/60 bg-card/40 pl-4 pr-4 py-3 transition-colors hover:bg-card/70`}
     >
-      <div className="step__head">
-        <span className="step__order">{step.order + 1}</span>
-        <span className="step__icon" aria-hidden>
-          {INTENT_ICON[step.intent]}
-        </span>
-        <span className="step__title">{step.title}</span>
-        <span className="step__intent">{INTENT_LABEL[step.intent]}</span>
-        <span className="step__status">{step.status.replace("_", " ")}</span>
-      </div>
+      {/* Status stripe */}
+      <div
+        className={`absolute left-0 top-0 h-full w-1 ${STATUS_DOT[step.status]}`}
+        aria-hidden
+      />
 
-      <div className="step__body">
-        <p className="step__what">{step.what}</p>
-
-        {step.how && (
-          <details className="step__details">
-            <summary>How</summary>
-            <p>{step.how}</p>
-          </details>
-        )}
-
-        {step.risk && (
-          <details className="step__details step__details--risk">
-            <summary>⚠ Risk</summary>
-            <p>{step.risk}</p>
-          </details>
-        )}
-
-        {step.backout && (
-          <details className="step__details step__details--backout">
-            <summary>↩ Backout</summary>
-            <p>{step.backout}</p>
-          </details>
-        )}
-
-        {step.retrospective && (
-          <div className="retrospective">
-            <h4>Retrospective ({step.retrospective.matches_plan})</h4>
-            <p>{step.retrospective.done}</p>
-            {step.retrospective.deviation && (
-              <p className="retrospective__deviation">
-                <strong>Deviation:</strong> {step.retrospective.deviation}
-              </p>
-            )}
+      <div className="flex items-start gap-3">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border bg-background font-mono text-[11px] text-muted-foreground">
+          {step.order + 1}
+        </div>
+        <div className="min-w-0 flex-1 space-y-2">
+          {/* Header */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="font-medium text-foreground">{step.title}</span>
+            <Badge variant="outline" className="font-mono text-[10px]">
+              {INTENT_LABEL[step.intent]}
+            </Badge>
+            <Badge
+              variant={STATUS_VARIANT[step.status]}
+              className="ml-auto font-mono text-[10px]"
+            >
+              {step.status.replace("_", " ")}
+            </Badge>
           </div>
-        )}
-      </div>
 
-      {step.status === "pending" && (
-        <div className="step__actions">
-          <button
-            className="btn btn--sm btn--primary"
-            onClick={() => onDelta({ type: "approve_step" } satisfies DeltaAction)}
-          >
-            ✓ Approve
-          </button>
-          <button
-            className="btn btn--sm"
-            onClick={() => {
-              const reason = prompt("Why reject this step?");
-              if (!reason) return;
-              onDelta({ type: "reject_step", reason } satisfies DeltaAction);
-            }}
-          >
-            ✗ Reject
-          </button>
-          <button
-            className="btn btn--sm"
-            onClick={() => {
-              const reason = prompt("Why skip?");
-              if (!reason) return;
-              onDelta({ type: "skip_step", reason } satisfies DeltaAction);
-            }}
-          >
-            ⤳ Skip
-          </button>
-          {editing ? (
-            <StepEditor
-              step={step}
-              onSave={(action) => {
-                onDelta(action);
-                setEditing(false);
-              }}
-              onCancel={() => setEditing(false)}
-            />
-          ) : (
-            <button className="btn btn--sm" onClick={startEditing}>
-              ✎ Edit
-            </button>
+          {/* Body */}
+          <p className="text-sm leading-relaxed text-foreground/85">{step.what}</p>
+
+          {(step.how || step.risk || step.backout) && (
+            <div className="grid gap-1.5 pt-1">
+              {step.how && <StepDetail label="How" body={step.how} tone="muted" />}
+              {step.risk && <StepDetail label="Risk" body={step.risk} tone="warning" />}
+              {step.backout && (
+                <StepDetail label="Backout" body={step.backout} tone="info" />
+              )}
+            </div>
+          )}
+
+          {/* Retrospective */}
+          {step.retrospective && (
+            <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3">
+              <div className="mb-1 flex items-center gap-2">
+                <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
+                  Retrospective
+                </span>
+                <Badge
+                  variant={
+                    step.retrospective.matches_plan === "match"
+                      ? "success"
+                      : step.retrospective.matches_plan === "partial"
+                        ? "warning"
+                        : "destructive"
+                  }
+                  className="text-[10px]"
+                >
+                  {step.retrospective.matches_plan}
+                </Badge>
+              </div>
+              <p className="text-sm text-foreground/85">{step.retrospective.done}</p>
+              {step.retrospective.deviation && (
+                <p className="mt-1.5 text-xs text-amber-400">
+                  <strong className="font-semibold">Deviation:</strong>{" "}
+                  {step.retrospective.deviation}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Actions */}
+          {step.status === "pending" && (
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <Button
+                size="sm"
+                onClick={() => onDelta({ type: "approve_step" } satisfies DeltaAction)}
+              >
+                <Check className="h-3.5 w-3.5" /> Approve
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const reason = window.prompt("Why reject this step?");
+                  if (!reason) return;
+                  onDelta({ type: "reject_step", reason } satisfies DeltaAction);
+                }}
+              >
+                <X className="h-3.5 w-3.5" /> Reject
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  const reason = window.prompt("Why skip?");
+                  if (!reason) return;
+                  onDelta({ type: "skip_step", reason } satisfies DeltaAction);
+                }}
+              >
+                <SkipForward className="h-3.5 w-3.5" /> Skip
+              </Button>
+              <StepEditDialog step={step} onApply={(action) => onDelta(action)} />
+            </div>
+          )}
+
+          {step.status === "in_progress" && (
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <Button
+                size="sm"
+                onClick={() => {
+                  const actual = window.prompt("What was actually done?");
+                  if (!actual) return;
+                  onDelta({
+                    type: "complete_step",
+                    actual,
+                    matches_plan: "match",
+                    deviation: null,
+                  } satisfies DeltaAction);
+                }}
+              >
+                <Check className="h-3.5 w-3.5" /> Complete
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => {
+                  const error = window.prompt("What went wrong?");
+                  if (!error) return;
+                  onDelta({ type: "fail_step", error } satisfies DeltaAction);
+                }}
+              >
+                <X className="h-3.5 w-3.5" /> Fail
+              </Button>
+            </div>
           )}
         </div>
-      )}
-
-      {step.status === "in_progress" && (
-        <div className="step__actions">
-          <button
-            className="btn btn--sm btn--primary"
-            onClick={() => {
-              const actual = prompt("What was actually done?");
-              if (!actual) return;
-              onDelta({
-                type: "complete_step",
-                actual,
-                matches_plan: "match",
-                deviation: null,
-              } satisfies DeltaAction);
-            }}
-          >
-            ✓ Complete
-          </button>
-          <button
-            className="btn btn--sm btn--danger"
-            onClick={() => {
-              const error = prompt("What went wrong?");
-              if (!error) return;
-              onDelta({ type: "fail_step", error } satisfies DeltaAction);
-            }}
-          >
-            ✗ Fail
-          </button>
-        </div>
-      )}
+      </div>
     </li>
   );
 }
 
-interface EditorProps {
-  step: Step;
-  onSave: (action: DeltaAction) => void;
-  onCancel: () => void;
-}
-
-function StepEditor({ step, onSave, onCancel }: EditorProps) {
-  const [title, setTitle] = useState(step.title);
-  const [what, setWhat] = useState(step.what);
+function StepDetail({
+  label,
+  body,
+  tone,
+}: {
+  label: string;
+  body: string;
+  tone: "muted" | "warning" | "info";
+}) {
+  const toneClass =
+    tone === "warning"
+      ? "border-amber-500/20 bg-amber-500/5"
+      : tone === "info"
+        ? "border-sky-500/20 bg-sky-500/5"
+        : "border-border/60 bg-background/30";
 
   return (
-    <div className="step__editor">
-      <label>
-        title
-        <input value={title} onChange={(e) => setTitle(e.target.value)} />
-      </label>
-      <label>
-        what
-        <textarea value={what} onChange={(e) => setWhat(e.target.value)} />
-      </label>
-      <div className="step__editor-actions">
-        <button
-          className="btn btn--sm btn--primary"
-          onClick={() => {
-            onSave({ type: "set_step_title", text: title } satisfies DeltaAction);
-            onSave({ type: "set_step_what", text: what } satisfies DeltaAction);
-          }}
-        >
-          Apply
-        </button>
-        <button className="btn btn--sm" onClick={onCancel}>
-          Cancel
-        </button>
-      </div>
-    </div>
+    <details className={`group/details rounded-md border ${toneClass} px-3 py-2 text-xs`}>
+      <summary className="cursor-pointer select-none text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
+        <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-wider">
+          {label}
+          <ChevronDown className="h-3 w-3 transition-transform group-open/details:rotate-180" />
+        </span>
+      </summary>
+      <p className="mt-1.5 leading-relaxed text-foreground/85">{body}</p>
+    </details>
+  );
+}
+
+function StepEditDialog({
+  step,
+  onApply,
+}: {
+  step: Step;
+  onApply: (action: DeltaAction) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState(step.title);
+  const [what, setWhat] = useState(step.what);
+  const [risk, setRisk] = useState(step.risk ?? "");
+  const [backout, setBackout] = useState(step.backout ?? "");
+
+  const reset = () => {
+    setTitle(step.title);
+    setWhat(step.what);
+    setRisk(step.risk ?? "");
+    setBackout(step.backout ?? "");
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) reset();
+      }}
+    >
+      <Button size="sm" variant="ghost" onClick={() => setOpen(true)}>
+        <Pencil className="h-3.5 w-3.5" /> Edit
+      </Button>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Edit step</DialogTitle>
+          <DialogDescription>
+            Each field becomes a structured <code>Delta</code>. The LLM will
+            re-render the plan on the next turn.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <Field label="title">
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </Field>
+          <Field label="what">
+            <Textarea
+              value={what}
+              onChange={(e) => setWhat(e.target.value)}
+              rows={3}
+            />
+          </Field>
+          <Field label="risk">
+            <Input
+              value={risk}
+              onChange={(e) => setRisk(e.target.value)}
+              placeholder="What could go wrong?"
+            />
+          </Field>
+          <Field label="backout">
+            <Input
+              value={backout}
+              onChange={(e) => setBackout(e.target.value)}
+              placeholder="How to roll back if this fails"
+            />
+          </Field>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+          <Button
+            onClick={() => {
+              if (title !== step.title) {
+                onApply({ type: "set_step_title", text: title } satisfies DeltaAction);
+              }
+              if (what !== step.what) {
+                onApply({ type: "set_step_what", text: what } satisfies DeltaAction);
+              }
+              if (risk !== (step.risk ?? "")) {
+                onApply({ type: "set_step_risk", text: risk || null } satisfies DeltaAction);
+              }
+              if (backout !== (step.backout ?? "")) {
+                onApply({ type: "set_step_backout", text: backout || null } satisfies DeltaAction);
+              }
+              setOpen(false);
+            }}
+          >
+            Apply as Delta
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="grid gap-1.5">
+      <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </span>
+      {children}
+    </label>
   );
 }
